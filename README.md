@@ -7,6 +7,25 @@ only the audio fails to decode.
 This installs a background watcher that detects and fixes it automatically,
 within a few seconds of import. No manual conversion, no re-importing.
 
+## Quick Install
+
+```bash
+bash <(curl -qfsSL https://raw.githubusercontent.com/ekremx25/davinci-aac-support/main/install.sh)
+```
+
+Run this command in Bash as your normal user (not with `sudo`). The installer automatically enables and starts `davinci-aac-support.service` in your systemd user session. It will start again whenever you log in; no separate enable command is needed.
+
+Check it after installation:
+
+```bash
+systemctl --user is-enabled davinci-aac-support.service
+systemctl --user is-active davinci-aac-support.service
+```
+
+Expected results: `enabled` and `active`.
+
+Alternatively, clone the repo and run `./install.sh` directly.
+
 [![tests](https://github.com/broskisworld/davinci-aac-support/actions/workflows/tests.yml/badge.svg)](https://github.com/broskisworld/davinci-aac-support/actions/workflows/tests.yml)
 
 **[→ davinci-aac-support.0thdraft.com](https://davinci-aac-support.0thdraft.com)** — download and full walkthrough, prettier page.
@@ -117,22 +136,7 @@ Real package: shows up in your package manager, `apt remove davinci-aac-support`
 
 ### Option C — terminal
 
-```bash
-bash <(curl -qfsSL https://raw.githubusercontent.com/ekremx25/davinci-aac-support/main/install.sh)
-```
-
-Run this command in Bash as your normal user (not with `sudo`). The installer automatically enables and starts `davinci-aac-support.service` in your systemd user session. It will start again whenever you log in; no separate enable command is needed.
-
-Check it after installation:
-
-```bash
-systemctl --user is-enabled davinci-aac-support.service
-systemctl --user is-active davinci-aac-support.service
-```
-
-Expected results: `enabled` and `active`.
-
-Alternatively, clone the repo and run `./install.sh` directly.
+Use the [Quick Install command](#quick-install) at the top of this page.
 
 ### The one manual step
 
