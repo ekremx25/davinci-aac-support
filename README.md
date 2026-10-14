@@ -118,10 +118,21 @@ Real package: shows up in your package manager, `apt remove davinci-aac-support`
 ### Option C — terminal
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ekremx25/davinci-aac-support/main/install.sh | bash
+bash <(curl -qfsSL https://raw.githubusercontent.com/ekremx25/davinci-aac-support/main/install.sh)
 ```
 
-or clone the repo and run `./install.sh` directly.
+Run this command in Bash as your normal user (not with `sudo`). The installer automatically enables and starts `davinci-aac-support.service` in your systemd user session. It will start again whenever you log in; no separate enable command is needed.
+
+Check it after installation:
+
+```bash
+systemctl --user is-enabled davinci-aac-support.service
+systemctl --user is-active davinci-aac-support.service
+```
+
+Expected results: `enabled` and `active`.
+
+Alternatively, clone the repo and run `./install.sh` directly.
 
 ### The one manual step
 
