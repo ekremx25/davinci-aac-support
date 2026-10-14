@@ -20,7 +20,7 @@
 #
 # Run this from the extracted zip (it picks up davinci_aac_support_watch.py
 # sitting next to it) or standalone, e.g. via:
-#   curl -fsSL https://raw.githubusercontent.com/broskisworld/davinci-aac-support/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/ekremx25/davinci-aac-support/main/install.sh | bash
 # (standalone, it fetches the daemon file straight from GitHub instead).
 #
 # Usage:
@@ -55,7 +55,7 @@ case "${1:-}" in
 esac
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-GITHUB_RAW_BASE="https://raw.githubusercontent.com/broskisworld/davinci-aac-support/main"
+GITHUB_RAW_BASE="https://raw.githubusercontent.com/ekremx25/davinci-aac-support/main"
 
 BIN_DIR="$HOME/.local/bin"
 SERVICE_DIR="$HOME/.config/systemd/user"

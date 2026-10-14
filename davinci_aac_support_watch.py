@@ -10,11 +10,13 @@ changes (see conversion_mode in davinci_aac_support_config.py).
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import time
+import unicodedata
 
 import davinci_aac_support_config as settings
 
@@ -111,7 +113,7 @@ def has_aac_audio(path):
         out = subprocess.run(
             ["ffprobe", "-v", "error", "-select_streams", "a",
              "-show_entries", "stream=codec_name", "-of", "csv=p=0", path],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
         )
     except Exception as e:
         log(f"  ffprobe failed on {path}: {e}")
@@ -137,7 +139,7 @@ def get_non_av_stream_types(path):
     try:
         out = subprocess.run(
             ["ffprobe", "-v", "error", "-show_entries", "stream=codec_type", "-of", "csv=p=0", path],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
         )
     except Exception:
         return []
@@ -153,6 +155,40 @@ def _hashed_output_path(path, output_directory):
     stem, ext = os.path.splitext(os.path.basename(path))
     digest = hashlib.sha1(os.path.abspath(path).encode()).hexdigest()[:8]
     return os.path.join(output_directory, f"{stem}-{digest}{ext}")
+
+
+def _resolve_safe_path(path):
+    """Return an ASCII-only hard-link path for Resolve on Linux when needed.
+
+    Resolve can report Linear PCM correctly yet fail to decode it when the
+    source path contains non-ASCII characters.  A hard link gives Resolve a
+    safe path without duplicating the multi-gigabyte media file or removing
+    the user's original filename.
+    """
+    try:
+        path.encode("ascii")
+        return path
+    except UnicodeEncodeError:
+        pass
+
+    directory = os.path.dirname(path) or "."
+    stem, ext = os.path.splitext(os.path.basename(path))
+    ascii_stem = unicodedata.normalize("NFKD", stem).encode("ascii", "ignore").decode("ascii")
+    ascii_stem = re.sub(r"[^A-Za-z0-9._-]+", "-", ascii_stem).strip("-._") or "media"
+    digest = hashlib.sha1(os.path.abspath(path).encode("utf-8")).hexdigest()[:8]
+    alias = os.path.join(directory, f"{ascii_stem}-{digest}{ext}")
+    try:
+        if os.path.exists(alias):
+            if os.path.samefile(path, alias):
+                return alias
+            log(f"  ASCII alias already exists and is a different file: {alias}")
+            return path
+        os.link(path, alias)
+        log(f"  Resolve-safe path: {alias}")
+        return alias
+    except OSError as e:
+        log(f"  couldn't create Resolve-safe path ({e}); using original path")
+        return path
 
 
 def convert_clip(path):
@@ -192,14 +228,14 @@ def convert_clip(path):
 
     if non_av_streams:
         result = subprocess.run(["ffmpeg", "-y", "-i", path, *FULL_PRESERVE_ARGS, tmp_path],
-                                 capture_output=True, text=True)
+                                 capture_output=True, text=True, encoding="utf-8", errors="replace")
         if result.returncode != 0:
             log("  container-preserving conversion failed, falling back to video+audio only")
             result = subprocess.run(["ffmpeg", "-y", "-i", path, *SAFE_MAP_ARGS, tmp_path],
-                                     capture_output=True, text=True)
+                                     capture_output=True, text=True, encoding="utf-8", errors="replace")
     else:
         result = subprocess.run(["ffmpeg", "-y", "-i", path, *SAFE_MAP_ARGS, tmp_path],
-                                 capture_output=True, text=True)
+                                 capture_output=True, text=True, encoding="utf-8", errors="replace")
 
     if result.returncode != 0:
         log(f"  ffmpeg FAILED ({time.time()-t0:.0f}s): {result.stderr[-800:]}")
@@ -208,7 +244,7 @@ def convert_clip(path):
 
     os.replace(tmp_path, final_path)
     log(f"  converted in {time.time()-t0:.0f}s")
-    return final_path
+    return _resolve_safe_path(final_path)
 
 
 def process_clip(clip):

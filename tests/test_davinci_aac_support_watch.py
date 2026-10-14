@@ -394,3 +394,43 @@ class TestProcessClip:
         with patch("subprocess.run") as run:
             watch.process_clip(clip)
         run.assert_not_called()
+
+
+class TestResolveSafePath:
+    def test_ascii_path_unchanged(self, tmp_path):
+        path = tmp_path / 'video.mp4'
+        path.write_bytes(b'media')
+        assert watch._resolve_safe_path(str(path)) == str(path)
+
+    def test_turkish_filename_alias_preserves_original_and_reuses_link(self, tmp_path):
+        path = tmp_path / 'Türkçe çekim ıİşğ.mp4'
+        path.write_bytes(b'media')
+        alias = watch._resolve_safe_path(str(path))
+        assert alias != str(path)
+        assert os.path.basename(alias).isascii()
+        assert os.path.samefile(path, alias)
+        assert path.read_bytes() == b'media'
+        assert watch._resolve_safe_path(str(path)) == alias
+
+    def test_existing_unrelated_alias_is_not_overwritten(self, tmp_path):
+        path = tmp_path / 'çekim.mp4'
+        path.write_bytes(b'original')
+        alias = watch._resolve_safe_path(str(path))
+        os.unlink(alias)
+        with open(alias, 'wb') as f:
+            f.write(b'unrelated')
+        assert watch._resolve_safe_path(str(path)) == str(path)
+        with open(alias, 'rb') as f:
+            assert f.read() == b'unrelated'
+
+    def test_unsupported_hard_links_fall_back_to_original(self, tmp_path):
+        path = tmp_path / 'çekim.mp4'
+        path.write_bytes(b'original')
+        with patch.object(watch.os, 'link', side_effect=OSError('unsupported')):
+            assert watch._resolve_safe_path(str(path)) == str(path)
+
+    def test_probe_explicit_utf8_decoding(self):
+        with patch('subprocess.run', return_value=_ffprobe_result('aac\n')) as run:
+            assert watch.has_aac_audio('/media/çekim.mp4')
+        assert run.call_args.kwargs['encoding'] == 'utf-8'
+        assert run.call_args.kwargs['errors'] == 'replace'

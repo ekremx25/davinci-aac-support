@@ -13,6 +13,19 @@ within a few seconds of import. No manual conversion, no re-importing.
 
 ---
 
+## Changes in this fork
+
+This fork includes local Turkish-filename fixes:
+
+- Decode ffmpeg/ffprobe output explicitly as UTF-8, replacing invalid output bytes instead of failing with a decoding error.
+- After conversion, create an ASCII-named hard link beside media whose path contains non-ASCII characters and pass that alias to Resolve. The original filename remains available and the media bytes are not duplicated.
+- Reuse an existing alias only if it points to the same file; otherwise, or if hard links are unavailable, fall back to the original path.
+
+The alias is created in the same directory. This workaround covers filenames, **not non-ASCII parent directory names**; use an ASCII-only directory path for this workaround. The original conversion-mode behavior still applies: in-place conversion replaces the original AAC audio.
+
+The terminal installer below fetches this fork's files. The upstream project and license are retained.
+
+
 ## The problem
 
 ```mermaid
@@ -105,7 +118,7 @@ Real package: shows up in your package manager, `apt remove davinci-aac-support`
 ### Option C — terminal
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/broskisworld/davinci-aac-support/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ekremx25/davinci-aac-support/main/install.sh | bash
 ```
 
 or clone the repo and run `./install.sh` directly.
